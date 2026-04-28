@@ -37,7 +37,7 @@ def test_that():
     print('Done (getting nets)')
 
     print('Getting data loader...')
-    data_loader = get_dataloader(train=False, shuffle=False, batch_size=5)
+    data_loader = get_dataloader(train=False, shuffle=False, batch_size=1) #TODO: batch_size=1 this is just to get things faster
     print('Done (getting data loader)')
 
     print('\nCalculate accuracy for models...')

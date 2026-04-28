@@ -60,12 +60,20 @@ def auto_attack(model: Module, test_loader: DataLoader, eps: float = 8/255, atta
     adversary.apgd.n_restarts = 1
 
     # Load all data into tensors
-    x_test = torch.cat([x for (x, _) in test_loader], 0)
-    y_test = torch.cat([y for (_, y) in test_loader], 0)
+    x_test = torch.cat([x for (x, _) in test_loader][:100], 0) #TODO: 100 should be a var
+    y_test = torch.cat([y for (_, y) in test_loader][:100], 0)
 
     x_test.to(c._device)
     y_test.to(c._device)
 
-    x_adv = adversary.run_standard_evaluation(x_test, y_test)
+    x_adv = adversary.run_standard_evaluation(x_test, y_test, bs=50) #TODO: 50 should be customizable
 
-    return x_adv
+    # Get accuracy
+    model.eval()
+    with torch.no_grad():
+        output = model(x_adv)
+        pred = output.max(1)[1]
+        correct = pred.eq(y_test).float().sum()
+        adv_accuracy = correct / y_test.shape[0]
+
+    return float(adv_accuracy)
