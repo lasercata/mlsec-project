@@ -1,0 +1,7 @@
+# torch
+# torchvision
+# secml-torch
+# secml-torch[foolbox]
+# git+https://github.com/pralab/secml-torch
+
+dotenv==0.9.9
