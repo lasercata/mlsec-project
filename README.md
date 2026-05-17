@@ -1,5 +1,5 @@
 # MLsec project
-TODO: description
+This project aims to re-evaluate some (CIFAR-10) models from RobustBench using different values of the epsilon radius.
 
 ## Setup
 1. Create the virtual environment

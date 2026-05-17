@@ -33,7 +33,12 @@ class Conf:
         raise RuntimeError('Conf: use Conf.get_instance to get the Singleton instance')
 
     def _init(self):
-        '''Initiates the class'''
+        '''
+        Initiates the class
+
+        Raises:
+            ValueError if there is an error in the env vars
+        '''
 
         # Load config.env
         self._bring_env(ENV_FN)
@@ -44,7 +49,22 @@ class Conf:
         self._models_path = os.environ.get('MODELS_PATH', 'models/')
         self._dataset = os.environ.get('DATASET', 'cifar10')
         self._threat_model = os.environ.get('THREAT_MODEL', 'Linf')
-        self._model_names = json.loads(os.environ.get('MODEL_NAMES', '[]'))
+
+        try:
+            self._epsilon_values = json.loads(os.environ.get('EPSILON_VALUES', '[]'))
+        except json.JSONDecodeError as err:
+            raise ValueError(f'parsing "EPSILON_VALUES": cannot decode json: {err}')
+
+        try:
+            self._model_names = json.loads(os.environ.get('MODEL_NAMES', '[]'))
+        except json.JSONDecodeError as err:
+            raise ValueError(f'parsing "MODEL_NAMES": cannot decode json: {err}')
+
+        for k, v in enumerate(self._epsilon_values):
+            if type(v) not in (int, float):
+                raise ValueError(f'parsing "EPSILON_VALUES": error at index {k}: "{v}" is not an int or a float')
+
+            self._epsilon_values[k] = v / 255
 
 
         # Public dict
@@ -54,6 +74,7 @@ class Conf:
             'MODELS_PATH': self._models_path,
             'DATASET': self._dataset,
             'THREAT_MODEL': self._threat_model,
+            'EPSILON_VALUES': self._epsilon_values,
             'MODEL_NAMES': self._model_names
         }
 
