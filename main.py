@@ -4,11 +4,10 @@
 '''Main file that runs the project'''
 
 ##-Imports
-# Python modules
-
 # Project
 from src.config import Conf
 from src.attack import run_all
+from src.parser_ui import ParserUi
 
 ##-Main
 def main():
@@ -28,4 +27,6 @@ def main():
 
 ##-Run
 if __name__ == '__main__':
-    main()
+    # main()
+    app = ParserUi()
+    app.parse()

@@ -47,7 +47,7 @@ def auto_attack(
         - model
         - test_loader: the loader for the data to be used in the attacks
         - eps: epsilon (default: 8/255)
-        - test_size: the number of samples to take from the `test_loader` (the `test_size` first are taken)
+        - test_size: the number of samples to take from the `test_loader` (the `test_size` firsts are taken)
         - batch_size: the batch size in auto attack (default: 50)
         - attacks: if 0, run all, if 1, run just 'apgd-ce', if 2, run just 'apgd-ce' and 'apgd-t'
         - verbose: if `True`, display AutoAttack's progress
@@ -99,15 +99,24 @@ def auto_attack(
     return float(adv_accuracy)
 
 ##-Run all
-def run_all(calc_acc: bool = True, batch_size: int = 1, aa_verbose: bool = False, attack_mode: int = 1) -> dict:
+def run_all(
+    calc_acc: bool = True,
+    batch_size: int = 1,
+    aa_nb_samples: int = 100,
+    aa_batch_size: int = 50,
+    aa_verbose: bool = False,
+    attack_mode: int = 1
+) -> dict:
     '''
     Run attacks on all models defined in `config.env` with all epsilon values defined in the same file.
 
     In:
         - calc_acc: if `True`, calculates the clean accuracy
         - batch_size: the test data batch size
+        - aa_nb_samples: the number of samples to run autoattacks on (total samples = aa_nb_samples * batch_size)
+        - aa_batch_size: the batch size used in autoattack
         - aa_verbose: if True, shows output from auto attack
-        - attack_mode: see the `attack` param of `auto_attack`
+        - attack_mode: see the `attack` param of function `auto_attack`
 
     Out:
         A dictionary of the results, in the following shape:
@@ -118,7 +127,11 @@ def run_all(calc_acc: bool = True, batch_size: int = 1, aa_verbose: bool = False
                     "attacks": [
                         {
                             "eps": float,
+                            "eps_h": str,
                             "mode": int,
+                            "batch_size": int,
+                            "aa_batch_size": int,
+                            "aa_nb_samples": int,
                             "adv_acc": float,
                             "time": float
                         },
@@ -165,13 +178,26 @@ def run_all(calc_acc: bool = True, batch_size: int = 1, aa_verbose: bool = False
             t_eps_0 = dt.now()
             print(f'\n\t\tAttack on {m} with eps={255*eps}/255 started at {t_eps_0}')
 
-            adv_acc = auto_attack(nets[m], data_loader, eps=eps, attacks=attack_mode, verbose=aa_verbose)
+            adv_acc = auto_attack(
+                nets[m],
+                data_loader,
+                eps=eps,
+                test_size=aa_nb_samples,
+                batch_size=aa_batch_size,
+                attacks=attack_mode,
+                verbose=aa_verbose
+            )
+
             print(f'\t\tAutoAttack accuracy: <= {round(100 * adv_acc, 2)}%\n')
             print(f'\t\tAttack ran in {dt.now() - t_eps_0}s')
 
             res[m]['attacks'].append({
                 'eps': eps,
+                'eps_h': f'{255 * eps}/255',
                 'mode': attack_mode,
+                'batch_size': batch_size,
+                'aa_batch_size': aa_batch_size,
+                'aa_nb_samples': aa_nb_samples,
                 'adv_acc': adv_acc,
                 'time': (dt.now() - t_eps_0).total_seconds()
             })
