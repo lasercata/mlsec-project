@@ -6,6 +6,7 @@
 ##-Imports
 # Python modules
 from autoattack import AutoAttack
+from datetime import datetime as dt
 import torch
 from torch.utils.data import DataLoader
 from torch.nn.modules.module import Module
@@ -13,7 +14,7 @@ from secmlt.models.pytorch.base_pytorch_nn import BasePyTorchClassifier
 from secmlt.metrics.classification import Accuracy
 
 # Project
-from src.config import Conf
+from src.config import Conf, get_nets, get_dataloader
 
 ##-Normal accuracy
 def calc_normal_accuracy(net: Module, data_loader: DataLoader) -> float:
@@ -96,3 +97,86 @@ def auto_attack(
         adv_accuracy = correct / y_test.shape[0]
 
     return float(adv_accuracy)
+
+##-Run all
+def run_all(calc_acc: bool = True, batch_size: int = 1, aa_verbose: bool = False, attack_mode: int = 1) -> dict:
+    '''
+    Run attacks on all models defined in `config.env` with all epsilon values defined in the same file.
+
+    In:
+        - calc_acc: if `True`, calculates the clean accuracy
+        - batch_size: the test data batch size
+        - aa_verbose: if True, shows output from auto attack
+        - attack_mode: see the `attack` param of `auto_attack`
+
+    Out:
+        A dictionary of the results, in the following shape:
+            ```
+            {
+                "model_name": {
+                    "clean_acc": float,
+                    "attacks": [
+                        {
+                            "eps": float,
+                            "mode": int,
+                            "adv_acc": float,
+                            "time": float
+                        },
+                        ...
+                    ]
+                },
+                ...
+            }
+            ```
+    '''
+
+    c = Conf.get_instance()
+
+    t0 = dt.now()
+    print('Getting nets...')
+    nets = get_nets()
+    print(f'Done (getting nets in {dt.now() - t0}s)')
+
+    t1 = dt.now()
+    print('Getting data loader...')
+    data_loader = get_dataloader(train=False, shuffle=False, batch_size=batch_size)
+    print(f'Done (getting data loader in {dt.now() - t1}s)')
+
+    res = {}
+
+    t2 = dt.now()
+    print(f'\nStarting attacks at {t2}')
+    for m in nets:
+        t00 = dt.now()
+        print(f'\tModel: {m}, started at {t00}')
+        res[m] = {}
+
+        if calc_acc:
+            print(f'\tCalculating clean accuracy...')
+            acc = calc_normal_accuracy(nets[m], data_loader)
+            print(f'\tClean accuracy: {round(100 * acc, 2)}%')
+            print(f'\tCalculated in {dt.now() - t00}')
+
+            res[m]['clean_acc'] = acc
+
+        res[m]['attacks'] = []
+
+        for eps in c.vars['EPSILON_VALUES']:
+            t_eps_0 = dt.now()
+            print(f'\n\t\tAttack on {m} with eps={255*eps}/255 started at {t_eps_0}')
+
+            adv_acc = auto_attack(nets[m], data_loader, eps=eps, attacks=attack_mode, verbose=aa_verbose)
+            print(f'\t\tAutoAttack accuracy: <= {round(100 * adv_acc, 2)}%\n')
+            print(f'\t\tAttack ran in {dt.now() - t_eps_0}s')
+
+            res[m]['attacks'].append({
+                'eps': eps,
+                'mode': attack_mode,
+                'adv_acc': adv_acc,
+                'time': (dt.now() - t_eps_0).total_seconds()
+            })
+    
+    print(f'\nAttacks ran in {dt.now() - t2}s')
+    print(f'Total elapsed time: {dt.now() - t0}s')
+
+    return res
