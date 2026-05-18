@@ -100,7 +100,19 @@ class ParserUi:
             '-s', '--sample-size',
             type=int,
             default=100,
-            help='number of samples to use in AutoAttack'
+            help='number of samples to use in AutoAttack (grouped by --batch-size)'
+        )
+        self.parser_c.add_argument(
+            '-b', '--batch-size',
+            type=int,
+            default=5,
+            help='batch size for test data'
+        )
+        self.parser_c.add_argument(
+            '-B', '--aa-batch-size',
+            type=int,
+            default=50,
+            help='batch size for attacks data'
         )
 
     def create_show(self):
@@ -143,7 +155,8 @@ class ParserUi:
 
         res = run_all(
             calc_acc=(not args.no_accuracy),
-            batch_size=2,
+            batch_size=args.batch_size,
+            aa_batch_size=args.aa_batch_size,
             aa_nb_samples=args.sample_size,
             aa_verbose=(not args.quiet),
             attack_mode=args.attack_mode

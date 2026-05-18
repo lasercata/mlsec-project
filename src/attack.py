@@ -113,7 +113,7 @@ def run_all(
     In:
         - calc_acc: if `True`, calculates the clean accuracy
         - batch_size: the test data batch size
-        - aa_nb_samples: the number of samples to run autoattacks on (total samples = aa_nb_samples * batch_size)
+        - aa_nb_samples: the number of samples to run autoattacks on (samples = aa_nb_samples // batch_size)
         - aa_batch_size: the batch size used in autoattack
         - aa_verbose: if True, shows output from auto attack
         - attack_mode: see the `attack` param of function `auto_attack`
@@ -130,8 +130,9 @@ def run_all(
                             "eps_h": str,
                             "mode": int,
                             "batch_size": int,
-                            "aa_batch_size": int,
                             "aa_nb_samples": int,
+                            "aa_batch_size": int,
+                            "total_samples": int,
                             "adv_acc": float,
                             "time": float
                         },
@@ -141,7 +142,13 @@ def run_all(
                 ...
             }
             ```
+
+    Raises:
+        ValueError if aa_nb_samples < batch_size
     '''
+
+    if aa_nb_samples // batch_size == 0:
+        raise ValueError('aa_nb_samples < batch_size')
 
     c = Conf.get_instance()
 
@@ -182,7 +189,7 @@ def run_all(
                 nets[m],
                 data_loader,
                 eps=eps,
-                test_size=aa_nb_samples,
+                test_size=(aa_nb_samples // batch_size),
                 batch_size=aa_batch_size,
                 attacks=attack_mode,
                 verbose=aa_verbose
@@ -196,8 +203,9 @@ def run_all(
                 'eps_h': f'{255 * eps}/255',
                 'mode': attack_mode,
                 'batch_size': batch_size,
+                'aa_nb_samples': aa_nb_samples // batch_size,
                 'aa_batch_size': aa_batch_size,
-                'aa_nb_samples': aa_nb_samples,
+                'total_samples': aa_nb_samples,
                 'adv_acc': adv_acc,
                 'time': (dt.now() - t_eps_0).total_seconds()
             })
