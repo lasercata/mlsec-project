@@ -12,6 +12,7 @@ from os.path import isfile
 
 # Project
 from src.attack import run_all
+from src.display import main_display
 
 ##-Init
 version = 'v1.0'
@@ -191,7 +192,6 @@ class ParserUi:
             stats = json.loads(data)
 
         except json.JSONDecodeError as err:
-            print(f'Error in input file: {err}')
+            self.parser_s.error(f'cannot decode json input file: {err}')
 
-        pass #TODO: do something with stats
-
+        main_display(stats)
