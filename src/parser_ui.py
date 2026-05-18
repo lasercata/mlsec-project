@@ -6,7 +6,9 @@
 ##-Imports
 # Python
 import argparse
+from datetime import datetime as dt
 import json
+from os.path import isfile
 
 # Project
 from src.attack import run_all
@@ -166,7 +168,19 @@ class ParserUi:
             print()
             print(json.dumps(res, indent=2))
         else:
-            json.dump(res, args.output, indend=4)
+            if isfile(args.output):
+                end = f'_{(dt.now()).isoformat()}'
+
+                if args.output[-5:] == '.json':
+                    out_fn = args.output[:-5] + end + '.json'
+                else:
+                    out_fn = args.output + end
+
+            else:
+                out_fn = args.output
+
+            with open(out_fn, 'w') as f:
+                json.dump(res, f, indent=2)
 
     def parse_show(self, args):
         '''Parse the arguments for the `compile` mode'''

@@ -6,3 +6,5 @@ datasets/
 models/
 
 config.env
+
+*.json
