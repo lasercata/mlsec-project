@@ -162,53 +162,58 @@ def run_all(
     data_loader = get_dataloader(train=False, shuffle=False, batch_size=batch_size)
     print(f'Done (getting data loader in {dt.now() - t1}s)')
 
+    t2 = dt.now()
     res = {}
 
-    t2 = dt.now()
-    print(f'\nStarting attacks at {t2}')
-    for m in nets:
-        t00 = dt.now()
-        print(f'\tModel: {m}, started at {t00}')
-        res[m] = {}
+    try:
+        print(f'\nStarting attacks at {t2}')
+        for m in nets:
+            t00 = dt.now()
+            print(f'\tModel: {m}, started at {t00}')
+            res[m] = {}
 
-        if calc_acc:
-            print(f'\tCalculating clean accuracy...')
-            acc = calc_normal_accuracy(nets[m], data_loader)
-            print(f'\tClean accuracy: {round(100 * acc, 2)}%')
-            print(f'\tCalculated in {dt.now() - t00}')
+            if calc_acc:
+                print(f'\tCalculating clean accuracy...')
+                acc = calc_normal_accuracy(nets[m], data_loader)
+                print(f'\tClean accuracy: {round(100 * acc, 2)}%')
+                print(f'\tCalculated in {dt.now() - t00}')
 
-            res[m]['clean_acc'] = acc
+                res[m]['clean_acc'] = acc
 
-        res[m]['attacks'] = []
+            res[m]['attacks'] = []
 
-        for eps in c.vars['EPSILON_VALUES']:
-            t_eps_0 = dt.now()
-            print(f'\n\t\tAttack on {m} with eps={255*eps}/255 started at {t_eps_0}')
+            for eps in c.vars['EPSILON_VALUES']:
+                t_eps_0 = dt.now()
+                print(f'\n\t\tAttack on {m} with eps={255*eps}/255 started at {t_eps_0}')
 
-            adv_acc = auto_attack(
-                nets[m],
-                data_loader,
-                eps=eps,
-                test_size=(aa_nb_samples // batch_size),
-                batch_size=aa_batch_size,
-                attacks=attack_mode,
-                verbose=aa_verbose
-            )
+                adv_acc = auto_attack(
+                    nets[m],
+                    data_loader,
+                    eps=eps,
+                    test_size=(aa_nb_samples // batch_size),
+                    batch_size=aa_batch_size,
+                    attacks=attack_mode,
+                    verbose=aa_verbose
+                )
 
-            print(f'\t\tAutoAttack accuracy: <= {round(100 * adv_acc, 2)}%\n')
-            print(f'\t\tAttack ran in {dt.now() - t_eps_0}s')
+                print(f'\t\tAutoAttack accuracy: <= {round(100 * adv_acc, 2)}%\n')
+                print(f'\t\tAttack ran in {dt.now() - t_eps_0}s')
 
-            res[m]['attacks'].append({
-                'eps': eps,
-                'eps_h': f'{255 * eps}/255',
-                'mode': attack_mode,
-                'batch_size': batch_size,
-                'aa_nb_samples': aa_nb_samples // batch_size,
-                'aa_batch_size': aa_batch_size,
-                'total_samples': aa_nb_samples,
-                'adv_acc': adv_acc,
-                'time': (dt.now() - t_eps_0).total_seconds()
-            })
+                res[m]['attacks'].append({
+                    'eps': eps,
+                    'eps_h': f'{255 * eps}/255',
+                    'mode': attack_mode,
+                    'batch_size': batch_size,
+                    'aa_nb_samples': aa_nb_samples // batch_size,
+                    'aa_batch_size': aa_batch_size,
+                    'total_samples': aa_nb_samples,
+                    'adv_acc': adv_acc,
+                    'time': (dt.now() - t_eps_0).total_seconds()
+                })
+
+    except KeyboardInterrupt:
+        print('\nStopped - KeyboardInterrupt')
+        print('Only partial result will be available')
     
     print(f'\nAttacks ran in {dt.now() - t2}s')
     print(f'Total elapsed time: {dt.now() - t0}s')
