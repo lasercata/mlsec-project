@@ -170,7 +170,7 @@ class ParserUi:
             print(json.dumps(res, indent=2))
         else:
             if isfile(args.output):
-                end = f'_{(dt.now()).isoformat()}'
+                end = f'_{(dt.now()).isoformat()}'.replace(':', '-')
 
                 if args.output[-5:] == '.json':
                     out_fn = args.output[:-5] + end + '.json'

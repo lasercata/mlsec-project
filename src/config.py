@@ -94,7 +94,7 @@ class Conf:
                 break
 
     @staticmethod
-    def get_instance() -> Conf:
+    def get_instance() -> 'Conf':
         '''Returns the Singleton instance, and create it for the first call.'''
 
         if Conf._instance is None:
