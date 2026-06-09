@@ -9,6 +9,7 @@ import argparse
 from datetime import datetime as dt
 import json
 from os.path import isfile
+from typing import Any
 
 # Project
 from src.attack import run_all
@@ -18,23 +19,29 @@ from src.display import main_display
 version = 'v1.0'
 
 ##-Utils
-def get_file_content(fn: str, parser=None) -> str:
+def get_json_file_content(fn: str, parser=None) -> Any:
     '''
-    Try to read the file `fn`.
-    If not found and `parser` != None, raise an error with `parser.error`. If `parser` is None, raise an `ArgumentTypeError`.
+    Try to load json from `fn`.
+    If not found or json parsing error, and `parser` != None, raise an error with `parser.error`. If `parser` is None, raise an `ArgumentTypeError`.
     '''
 
     try:
         with open(fn, 'r') as f:
-            content = f.read()
+            out = json.load(f)
 
     except FileNotFoundError:
         if parser != None:
-            parser.error(f'The file {fn} has not been found')
+            parser.error(f'The file "{fn}" has not been found')
         else:
-            raise argparse.ArgumentTypeError(f'The file {fn} has not been found')
+            raise argparse.ArgumentTypeError(f'The file "{fn}" has not been found')
 
-    return content
+    except json.JSONDecodeError as err:
+        if parser != None:
+            parser.error(f'cannot decode json input file: {err}')
+        else:
+            raise argparse.ArgumentTypeError(f'cannot decode json input file: {err}')
+
+    return out
 
 ##-Ui parser
 class ParserUi:
@@ -128,18 +135,17 @@ class ParserUi:
         self.parser_s.add_argument(
             'inputfile',
             type=str,
-            nargs=1,
+            nargs='+',
             help='name of the input json file'
         )
 
-        # self.parser_s.add_argument(
-        #     '-o', '--output',
-        #     dest='outputfile',
-        #     action='store',
-        #     default='',
-        #     help='name of the output file (default: stdout)'
-        # )
-        pass
+        self.parser_s.add_argument(
+            '-o', '--outdir',
+            dest='outdir',
+            action='store',
+            default='figures/',
+            help='name of the output directory (default: "figures/")'
+        )
 
     def parse(self):
         '''Parse the arguments of the main parser, to redirect to the right parser.'''
@@ -154,7 +160,7 @@ class ParserUi:
             self.parse_show(args)
 
     def parse_calculate(self, args):
-        '''Parse the arguments for the `analyse` mode'''
+        '''Parse the arguments for the `calculate` mode'''
 
         res = run_all(
             calc_acc=(not args.no_accuracy),
@@ -184,14 +190,11 @@ class ParserUi:
                 json.dump(res, f, indent=2)
 
     def parse_show(self, args):
-        '''Parse the arguments for the `compile` mode'''
+        '''Parse the arguments for the `show` mode'''
 
-        data = get_file_content(args.inputfile[0], self.parser_s)
+        json_content_lst: list[dict] = [
+            get_json_file_content(fn, self.parser_s)
+            for fn in args.inputfile
+        ]
 
-        try:
-            stats = json.loads(data)
-
-        except json.JSONDecodeError as err:
-            self.parser_s.error(f'cannot decode json input file: {err}')
-
-        main_display(stats)
+        main_display(args.inputfile, args.outdir)

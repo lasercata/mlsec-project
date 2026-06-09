@@ -28,3 +28,13 @@ To run the project:
 python main.py
 ```
 
+Calculate the data:
+```
+python main.py c -o out.json
+```
+
+Make the visualization:
+```
+python main.py s *.json
+```
+

@@ -5,10 +5,11 @@
 
 ##-Imports
 # Python
-pass
+from os.path import basename
+from pathlib import Path
 
 # Project
-pass
+from src.analyze import main as main_analyze
 
 ##-Init
 dataType = dict[
@@ -23,12 +24,21 @@ dataType = dict[
 ]
 
 ##-Display
-def main_display(stats: dataType):
+def main_display(json_filenames: list[str], out_dir: str):
     '''
     Entry point for the display function.
 
     In:
-        - stats: the data created by the `calculate` part of the program
+        - json_filenames: the list of json files names
+        - out_dir: the output directory to write images
     '''
 
-    pass #TODO
+    json_dct = {
+        basename(fn): Path(fn)
+        for fn in json_filenames
+    }
+
+    out_path = Path(out_dir)
+    out_path.mkdir(exist_ok=True)
+
+    main_analyze(json_dct, out_path)
